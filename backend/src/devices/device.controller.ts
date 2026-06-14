@@ -1,7 +1,20 @@
-import { Controller, Get, Headers, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { CurrentDevice } from './current-device.decorator';
+import { DeviceAuthGuard, DeviceWithLocation } from './device-auth.guard';
 import { DevicesService } from './devices.service';
 
-// Routes under /api/device/* are passed through by JwtAuthGuard automatically.
+// All routes under /api/device/* are passed through by JwtAuthGuard.
+// manifest and heartbeat additionally require the device's own authToken.
 @Controller('device')
 export class DeviceController {
   constructor(private devices: DevicesService) {}
@@ -17,5 +30,21 @@ export class DeviceController {
     @Headers('x-registration-secret') secret: string | undefined,
   ) {
     return this.devices.getStatus(deviceId, secret);
+  }
+
+  @Get('manifest')
+  @UseGuards(DeviceAuthGuard)
+  manifest(@CurrentDevice() device: DeviceWithLocation) {
+    return this.devices.manifest(device);
+  }
+
+  @Post('heartbeat')
+  @UseGuards(DeviceAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  heartbeat(
+    @CurrentDevice() device: DeviceWithLocation,
+    @Body() body: { currentItemId?: string; freeBytes?: number },
+  ) {
+    return this.devices.heartbeat(device, body);
   }
 }

@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
+import { DeviceWithLocation } from './device-auth.guard';
 
 // Unambiguous uppercase chars — no O/0/I/1 confusion on a TV screen
 const PAIRING_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -17,9 +19,19 @@ interface ClaimDto {
   playlistId?: string;
 }
 
+interface HeartbeatDto {
+  currentItemId?: string;
+  freeBytes?: number;
+}
+
 @Injectable()
 export class DevicesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private storage: StorageService,
+  ) {}
+
+  // ── Pairing ────────────────────────────────────────────────────────────────
 
   async register() {
     const pairingCode = await this.uniquePairingCode();
@@ -96,10 +108,65 @@ export class DevicesService {
       },
     });
 
-    // Strip registrationSecret from the response
     const { registrationSecret: _secret, ...safeDevice } = updated;
     return safeDevice;
   }
+
+  // ── Manifest ───────────────────────────────────────────────────────────────
+
+  async manifest(device: DeviceWithLocation) {
+    const playlistId =
+      device.playlistId ?? device.location?.playlistId ?? null;
+
+    if (!playlistId) {
+      return { playlistId: null, updatedAt: null, items: [] };
+    }
+
+    const playlist = await this.prisma.playlist.findUnique({
+      where: { id: playlistId },
+      include: {
+        items: {
+          orderBy: { order: 'asc' },
+          include: { mediaAsset: true },
+        },
+      },
+    });
+
+    if (!playlist) {
+      return { playlistId: null, updatedAt: null, items: [] };
+    }
+
+    const items = await Promise.all(
+      playlist.items.map(async (item) => ({
+        itemId: item.id,
+        type: item.mediaAsset.type,
+        checksum: `sha256-${item.mediaAsset.checksum}`,
+        durationSeconds:
+          item.durationOverride ?? item.mediaAsset.durationSeconds ?? null,
+        order: item.order,
+        downloadUrl: await this.storage.presignedUrl(item.mediaAsset.storageKey),
+      })),
+    );
+
+    return { playlistId: playlist.id, updatedAt: playlist.updatedAt, items };
+  }
+
+  // ── Heartbeat ──────────────────────────────────────────────────────────────
+
+  async heartbeat(device: DeviceWithLocation, dto: HeartbeatDto) {
+    await this.prisma.device.update({
+      where: { id: device.id },
+      data: {
+        lastSeenAt: new Date(),
+        ...(dto.currentItemId !== undefined && {
+          currentItemId: dto.currentItemId,
+        }),
+      },
+    });
+    return { ok: true };
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
 
   private async uniquePairingCode(): Promise<string> {
     for (;;) {
