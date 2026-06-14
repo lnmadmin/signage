@@ -1,0 +1,55 @@
+# ── Node ──────────────────────────────────────────────
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# ── NestJS / TypeScript ───────────────────────────────
+backend/dist/
+
+# ── Prisma ────────────────────────────────────────────
+# Keep the migrations folder in source control.
+# Ignore generated client if desired (re-generated on install).
+backend/node_modules/
+
+# ── Vite ──────────────────────────────────────────────
+cms-web/dist/
+cms-web/node_modules/
+
+# ── Android ───────────────────────────────────────────
+*.iml
+.gradle/
+local.properties
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.keystore
+!debug.keystore
+build/
+android-player/.gradle/
+android-player/build/
+android-player/local.properties
+android-player/.idea/
+android-player/captures/
+android-player/.externalNativeBuild/
+android-player/.cxx/
+
+# ── OS ────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ───────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
