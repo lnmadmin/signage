@@ -6,3 +6,83 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Location {
+  id         String    @id @default(cuid())
+  name       String
+  notes      String?
+  playlistId String?
+  playlist   Playlist? @relation("LocationPlaylist", fields: [playlistId], references: [id])
+  devices    Device[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Device {
+  id                 String       @id @default(cuid())
+  name               String?
+  pairingCode        String?      @unique
+  registrationSecret String?
+  status             DeviceStatus @default(PENDING)
+  authToken          String?      @unique
+  lastSeenAt         DateTime?
+  currentItemId      String?
+  locationId         String?
+  location           Location?    @relation(fields: [locationId], references: [id])
+  playlistId         String?
+  playlist           Playlist?    @relation("DevicePlaylist", fields: [playlistId], references: [id])
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+}
+
+enum DeviceStatus {
+  PENDING
+  CLAIMED
+  DISABLED
+}
+
+model MediaAsset {
+  id              String         @id @default(cuid())
+  type            MediaType
+  storageKey      String
+  filename        String
+  mimeType        String
+  sizeBytes       Int
+  checksum        String
+  durationSeconds Int?
+  createdAt       DateTime       @default(now())
+  items           PlaylistItem[]
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  WEB
+}
+
+model Playlist {
+  id        String         @id @default(cuid())
+  name      String
+  items     PlaylistItem[]
+  locations Location[]     @relation("LocationPlaylist")
+  devices   Device[]       @relation("DevicePlaylist")
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model PlaylistItem {
+  id               String     @id @default(cuid())
+  playlistId       String
+  playlist         Playlist   @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  mediaAssetId     String
+  mediaAsset       MediaAsset @relation(fields: [mediaAssetId], references: [id])
+  order            Int
+  durationOverride Int?
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}

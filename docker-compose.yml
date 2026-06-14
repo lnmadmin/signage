@@ -37,7 +37,7 @@ services:
       retries: 5
 
   emqx:
-    image: emqx/emqx:5
+    image: emqx/emqx:latest
     container_name: signage-emqx
     restart: unless-stopped
     environment:
