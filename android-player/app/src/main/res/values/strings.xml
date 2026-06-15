@@ -2,4 +2,6 @@
 <resources>
     <string name="app_name">Signage Player</string>
     <string name="starting">Starting…</string>
+    <string name="pair_label">Pair this display</string>
+    <string name="pair_hint">Enter this code in the CMS to start playing</string>
 </resources>

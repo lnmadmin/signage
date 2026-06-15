@@ -4,15 +4,58 @@
     android:layout_height="match_parent"
     android:background="#000000">
 
+    <!-- Pairing code screen -->
+    <LinearLayout
+        android:id="@+id/pairingView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="28dp"
+            android:fontFamily="sans-serif-light"
+            android:letterSpacing="0.15"
+            android:text="@string/pair_label"
+            android:textColor="#888888"
+            android:textSize="22sp" />
+
+        <TextView
+            android:id="@+id/pairingCode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:letterSpacing="0.25"
+            android:textColor="#FFFFFF"
+            android:textSize="96sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:fontFamily="sans-serif-light"
+            android:letterSpacing="0.05"
+            android:text="@string/pair_hint"
+            android:textColor="#666666"
+            android:textSize="18sp" />
+
+    </LinearLayout>
+
+    <!-- Generic status text: Starting…, Registering…, Claimed, errors -->
     <TextView
         android:id="@+id/statusText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:fontFamily="sans-serif-light"
+        android:letterSpacing="0.1"
         android:text="@string/starting"
         android:textColor="#FFFFFF"
-        android:textSize="28sp"
-        android:letterSpacing="0.1" />
+        android:textSize="28sp" />
 
 </FrameLayout>
