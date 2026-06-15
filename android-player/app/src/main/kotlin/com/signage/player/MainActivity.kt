@@ -24,7 +24,12 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         SecurePrefs.init(this)
-        lifecycleScope.launch { startPairingFlow() }
+        SyncManager.init(this)
+
+        lifecycleScope.launch {
+            startPairingFlow()  // suspends until CLAIMED
+            startSyncLoop()     // then runs forever
+        }
     }
 
     override fun onResume() {
@@ -40,13 +45,11 @@ class MainActivity : AppCompatActivity() {
     // ── Pairing flow ──────────────────────────────────────────────────────────
 
     private suspend fun startPairingFlow() {
-        // Already claimed — skip straight to ready screen
         if (SecurePrefs.authToken != null) {
             showClaimed()
             return
         }
 
-        // Register if this is a first run (no deviceId stored yet)
         if (SecurePrefs.deviceId == null) {
             while (true) {
                 showStatus("Registering…")
@@ -65,17 +68,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Show the stored pairing code (survives restarts)
         showPairingCode(SecurePrefs.pairingCode ?: "------")
 
-        // Poll /api/device/status until CLAIMED
         while (true) {
             delay(5_000)
             try {
-                val s = DeviceApi.getStatus(
-                    SecurePrefs.deviceId!!,
-                    SecurePrefs.registrationSecret!!,
-                )
+                val s = DeviceApi.getStatus(SecurePrefs.deviceId!!, SecurePrefs.registrationSecret!!)
                 if (s.status == "CLAIMED" && s.authToken != null) {
                     SecurePrefs.authToken = s.authToken
                     Log.i("Signage", "Claimed — token stored")
@@ -85,6 +83,26 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 Log.w("Signage", "status poll failed — will retry", e)
             }
+        }
+    }
+
+    // ── Sync loop ─────────────────────────────────────────────────────────────
+
+    private suspend fun startSyncLoop() {
+        while (true) {
+            val token = SecurePrefs.authToken ?: break
+            try {
+                val result = SyncManager.sync(token)
+                val msg = when {
+                    result.playlistId == null -> "Claimed — no playlist assigned"
+                    result.items.isEmpty()    -> "Playlist assigned — syncing…"
+                    else                      -> "Ready (${result.items.size} items cached)"
+                }
+                showStatus(msg)
+            } catch (e: Exception) {
+                Log.e("Signage", "Sync error", e)
+            }
+            delay(60_000)
         }
     }
 
