@@ -19,6 +19,26 @@ interface ClaimDto {
   playlistId?: string;
 }
 
+interface UpdateDeviceDto {
+  name?: string;
+  locationId?: string | null;
+  playlistId?: string | null;
+}
+
+const DEVICE_SELECT = {
+  id: true,
+  name: true,
+  status: true,
+  lastSeenAt: true,
+  currentItemId: true,
+  locationId: true,
+  location: { select: { id: true, name: true } },
+  playlistId: true,
+  playlist: { select: { id: true, name: true } },
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 interface HeartbeatDto {
   currentItemId?: string;
   freeBytes?: number;
@@ -110,6 +130,27 @@ export class DevicesService {
 
     const { registrationSecret: _secret, ...safeDevice } = updated;
     return safeDevice;
+  }
+
+  // ── Admin list / update / delete ───────────────────────────────────────────
+
+  findAll() {
+    return this.prisma.device.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: DEVICE_SELECT,
+    });
+  }
+
+  async update(id: string, dto: UpdateDeviceDto) {
+    const exists = await this.prisma.device.findUnique({ where: { id }, select: { id: true } });
+    if (!exists) throw new NotFoundException('Device not found');
+    return this.prisma.device.update({ where: { id }, data: dto, select: DEVICE_SELECT });
+  }
+
+  async remove(id: string) {
+    const exists = await this.prisma.device.findUnique({ where: { id }, select: { id: true } });
+    if (!exists) throw new NotFoundException('Device not found');
+    await this.prisma.device.delete({ where: { id } });
   }
 
   // ── Manifest ───────────────────────────────────────────────────────────────
