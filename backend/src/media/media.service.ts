@@ -42,8 +42,14 @@ export class MediaService {
     });
   }
 
-  findAll() {
-    return this.prisma.mediaAsset.findMany({ orderBy: { createdAt: 'desc' } });
+  async findAll() {
+    const assets = await this.prisma.mediaAsset.findMany({ orderBy: { createdAt: 'desc' } });
+    return Promise.all(
+      assets.map(async (asset) => ({
+        ...asset,
+        url: await this.storage.presignedUrl(asset.storageKey),
+      })),
+    );
   }
 
   async remove(id: string): Promise<void> {
