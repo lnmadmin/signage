@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Allows plain HTTP to the emulator host (10.0.2.2) and any LAN IP.
+  In production, remove base-config and restrict to your HTTPS domain.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
