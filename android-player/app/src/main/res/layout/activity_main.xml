@@ -1,8 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000">
+
+    <!-- Full-screen image slot (PlayerLoop shows/hides this) -->
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:scaleType="fitCenter"
+        android:visibility="gone" />
+
+    <!-- Full-screen video slot (PlayerLoop shows/hides this) -->
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/playerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:visibility="gone"
+        app:resize_mode="fit"
+        app:use_controller="false" />
 
     <!-- Pairing code screen -->
     <LinearLayout
@@ -46,7 +66,7 @@
 
     </LinearLayout>
 
-    <!-- Generic status text: Starting…, Registering…, Claimed, errors -->
+    <!-- Status/idle text: Starting…, Registering…, No playlist assigned, etc. -->
     <TextView
         android:id="@+id/statusText"
         android:layout_width="wrap_content"

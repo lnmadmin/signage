@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var playerLoop: PlayerLoop
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,42 +27,47 @@ class MainActivity : AppCompatActivity() {
         SecurePrefs.init(this)
         SyncManager.init(this)
 
+        playerLoop = PlayerLoop(
+            scope         = lifecycleScope,
+            imageView     = binding.imageView,
+            playerView    = binding.playerView,
+            onItemChanged = { id -> Log.d(TAG, "Now playing: $id") },
+        )
+
         lifecycleScope.launch {
-            startPairingFlow()  // suspends until CLAIMED
-            startSyncLoop()     // then runs forever
+            startPairingFlow()   // suspends until CLAIMED
+            startSyncLoop()      // runs forever
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        hideSystemBars()
+    override fun onDestroy() {
+        super.onDestroy()
+        playerLoop.release()
     }
 
+    override fun onResume() { super.onResume(); hideSystemBars() }
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) hideSystemBars()
     }
 
-    // ── Pairing flow ──────────────────────────────────────────────────────────
+    // ── Pairing ───────────────────────────────────────────────────────────────
 
     private suspend fun startPairingFlow() {
-        if (SecurePrefs.authToken != null) {
-            showClaimed()
-            return
-        }
+        if (SecurePrefs.authToken != null) { showClaimed(); return }
 
         if (SecurePrefs.deviceId == null) {
             while (true) {
                 showStatus("Registering…")
                 try {
                     val reg = DeviceApi.register()
-                    SecurePrefs.deviceId = reg.deviceId
+                    SecurePrefs.deviceId           = reg.deviceId
                     SecurePrefs.registrationSecret = reg.registrationSecret
-                    SecurePrefs.pairingCode = reg.pairingCode
-                    Log.i("Signage", "Registered as ${reg.deviceId}, code ${reg.pairingCode}")
+                    SecurePrefs.pairingCode        = reg.pairingCode
+                    Log.i(TAG, "Registered as ${reg.deviceId}, code ${reg.pairingCode}")
                     break
                 } catch (e: Exception) {
-                    Log.e("Signage", "register failed", e)
+                    Log.e(TAG, "register failed", e)
                     showStatus("Network error — retrying in 10s")
                     delay(10_000)
                 }
@@ -76,31 +82,39 @@ class MainActivity : AppCompatActivity() {
                 val s = DeviceApi.getStatus(SecurePrefs.deviceId!!, SecurePrefs.registrationSecret!!)
                 if (s.status == "CLAIMED" && s.authToken != null) {
                     SecurePrefs.authToken = s.authToken
-                    Log.i("Signage", "Claimed — token stored")
+                    Log.i(TAG, "Claimed — token stored")
                     showClaimed()
                     return
                 }
             } catch (e: Exception) {
-                Log.w("Signage", "status poll failed — will retry", e)
+                Log.w(TAG, "status poll failed — will retry", e)
             }
         }
     }
 
-    // ── Sync loop ─────────────────────────────────────────────────────────────
+    // ── Sync + player loop ────────────────────────────────────────────────────
 
     private suspend fun startSyncLoop() {
         while (true) {
             val token = SecurePrefs.authToken ?: break
             try {
                 val result = SyncManager.sync(token)
-                val msg = when {
-                    result.playlistId == null -> "Claimed — no playlist assigned"
-                    result.items.isEmpty()    -> "Playlist assigned — syncing…"
-                    else                      -> "Ready (${result.items.size} items cached)"
+                when {
+                    result.playlistId == null -> {
+                        playerLoop.setItems(emptyList())
+                        showStatus("No playlist assigned")
+                    }
+                    result.items.isEmpty() -> {
+                        playerLoop.setItems(emptyList())
+                        showStatus("Syncing content…")
+                    }
+                    else -> {
+                        showPlayerArea()
+                        playerLoop.setItems(result.items)
+                    }
                 }
-                showStatus(msg)
             } catch (e: Exception) {
-                Log.e("Signage", "Sync error", e)
+                Log.e(TAG, "Sync error", e)
             }
             delay(60_000)
         }
@@ -110,29 +124,33 @@ class MainActivity : AppCompatActivity() {
 
     private fun showStatus(msg: String) {
         binding.pairingView.visibility = View.GONE
-        binding.statusText.apply {
-            visibility = View.VISIBLE
-            text = msg
-        }
+        binding.imageView.visibility   = View.GONE
+        binding.playerView.visibility  = View.GONE
+        binding.statusText.apply { visibility = View.VISIBLE; text = msg }
     }
 
     private fun showPairingCode(code: String) {
         binding.pairingCode.text = code
-        binding.statusText.visibility = View.GONE
+        binding.statusText.visibility  = View.GONE
+        binding.imageView.visibility   = View.GONE
+        binding.playerView.visibility  = View.GONE
         binding.pairingView.visibility = View.VISIBLE
     }
 
     private fun showClaimed() = showStatus("Claimed — ready to play")
 
-    // ── Immersive mode ────────────────────────────────────────────────────────
+    /** Hides text overlays; PlayerLoop exclusively owns imageView and playerView after this. */
+    private fun showPlayerArea() {
+        binding.pairingView.visibility = View.GONE
+        binding.statusText.visibility  = View.GONE
+    }
 
     @Suppress("DEPRECATION")
     private fun hideSystemBars() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.insetsController?.let { ctrl ->
                 ctrl.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                ctrl.systemBarsBehavior =
-                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                ctrl.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
         } else {
             window.decorView.systemUiVisibility = (
@@ -144,5 +162,9 @@ class MainActivity : AppCompatActivity() {
                     or View.SYSTEM_UI_FLAG_FULLSCREEN
             )
         }
+    }
+
+    companion object {
+        private const val TAG = "Signage"
     }
 }
