@@ -1,6 +1,10 @@
 package com.signage.player
 
+import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -26,6 +30,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        initKioskMode()
         SecurePrefs.init(this)
         SyncManager.init(this)
 
@@ -54,6 +59,35 @@ class MainActivity : AppCompatActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) hideSystemBars()
+    }
+
+    // ── Kiosk mode ───────────────────────────────────────────────────────────
+
+    private fun initKioskMode() {
+        val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        if (!dpm.isDeviceOwnerApp(packageName)) {
+            Log.d(TAG, "Not device owner — skipping kiosk lock")
+            return
+        }
+
+        val admin = ComponentName(this, SignageDeviceAdmin::class.java)
+
+        // Whitelist our package so startLockTask() enters silently (no confirmation dialog)
+        dpm.setLockTaskPackages(admin, arrayOf(packageName))
+
+        // Register as the persistent home app — survives reboot without relying solely
+        // on BootReceiver (which is restricted on Android 10+ without device owner).
+        // clear-then-add keeps it idempotent across Activity re-creations.
+        val homeFilter = IntentFilter(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_HOME)
+            addCategory(Intent.CATEGORY_DEFAULT)
+        }
+        dpm.clearPackagePersistentPreferredActivities(admin, packageName)
+        dpm.addPersistentPreferredActivity(admin, homeFilter, ComponentName(this, MainActivity::class.java))
+
+        // Enter lock-task mode — suppresses Home, Back, and Recents on the remote
+        startLockTask()
+        Log.i(TAG, "Kiosk lock-task started")
     }
 
     // ── Pairing ───────────────────────────────────────────────────────────────

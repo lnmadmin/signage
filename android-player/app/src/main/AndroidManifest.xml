@@ -21,9 +21,17 @@
             android:configChanges="keyboardHidden|orientation|screenSize|screenLayout|uiMode"
             android:exported="true"
             android:screenOrientation="sensorLandscape">
+            <!-- App launcher entry point -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Home-app registration: required for addPersistentPreferredActivity to
+                 resolve this component, and makes us visible in the system home chooser. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
@@ -38,6 +46,19 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Device Owner / Device Admin receiver for lock-task kiosk mode -->
+        <receiver
+            android:name=".SignageDeviceAdmin"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin_policies" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
             </intent-filter>
         </receiver>
 

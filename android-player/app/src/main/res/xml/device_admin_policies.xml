@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Required meta-data resource for the DeviceAdminReceiver. No specific policies
+     are declared here because lock-task and home-app control are granted to Device
+     Owners programmatically via DevicePolicyManager, not via this file. -->
+<device-admin>
+    <uses-policies />
+</device-admin>
