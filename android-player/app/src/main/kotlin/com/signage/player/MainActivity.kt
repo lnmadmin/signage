@@ -1,5 +1,6 @@
 package com.signage.player
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -8,6 +9,7 @@ import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.signage.player.databinding.ActivityMainBinding
 import kotlinx.coroutines.delay
@@ -31,7 +33,10 @@ class MainActivity : AppCompatActivity() {
             scope         = lifecycleScope,
             imageView     = binding.imageView,
             playerView    = binding.playerView,
-            onItemChanged = { id -> Log.d(TAG, "Now playing: $id") },
+            onItemChanged = { id ->
+                PlaybackState.currentItemId = id
+                Log.d(TAG, "Now playing: $id")
+            },
         )
 
         lifecycleScope.launch {
@@ -95,6 +100,10 @@ class MainActivity : AppCompatActivity() {
     // ── Sync + player loop ────────────────────────────────────────────────────
 
     private suspend fun startSyncLoop() {
+        ContextCompat.startForegroundService(
+            this@MainActivity,
+            Intent(this@MainActivity, HeartbeatService::class.java),
+        )
         while (true) {
             val token = SecurePrefs.authToken ?: break
             try {

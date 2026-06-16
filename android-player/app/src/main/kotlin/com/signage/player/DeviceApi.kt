@@ -84,6 +84,22 @@ object DeviceApi {
         )
     }
 
+    suspend fun heartbeat(authToken: String, currentItemId: String?) = withContext(Dispatchers.IO) {
+        val body = JSONObject().apply {
+            currentItemId?.let { put("currentItemId", it) }
+        }
+        val conn = (URL("$base/api/device/heartbeat").openConnection() as HttpURLConnection).apply {
+            requestMethod = "POST"
+            setRequestProperty("Authorization", "Bearer $authToken")
+            setRequestProperty("Content-Type", "application/json")
+            connectTimeout = 15_000
+            readTimeout = 15_000
+            doOutput = true
+            outputStream.use { it.write(body.toString().toByteArray()) }
+        }
+        conn.readBody()
+    }
+
     suspend fun getManifest(authToken: String): ManifestResponse = withContext(Dispatchers.IO) {
         Log.d(TAG, "manifest request — token prefix: ${authToken.take(8)}…")
         val conn = (URL("$base/api/device/manifest").openConnection() as HttpURLConnection).apply {
