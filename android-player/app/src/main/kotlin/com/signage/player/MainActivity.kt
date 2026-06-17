@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ActivityInfo
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -142,6 +143,7 @@ class MainActivity : AppCompatActivity() {
             val token = SecurePrefs.authToken ?: break
             try {
                 val result = SyncManager.sync(token)
+                applyOrientation(result.orientation)
                 when {
                     result.playlistId == null -> {
                         playerLoop.setItems(emptyList())
@@ -160,6 +162,14 @@ class MainActivity : AppCompatActivity() {
                 Log.e(TAG, "Sync error", e)
             }
             delay(60_000)
+        }
+    }
+
+    private fun applyOrientation(orientation: String) {
+        requestedOrientation = if (orientation == "PORTRAIT") {
+            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         }
     }
 

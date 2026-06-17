@@ -4,6 +4,7 @@ import { api } from '../api/client';
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type DeviceStatus = 'PENDING' | 'CLAIMED' | 'DISABLED';
+type Orientation = 'LANDSCAPE' | 'PORTRAIT';
 
 interface Device {
   id: string;
@@ -11,6 +12,7 @@ interface Device {
   status: DeviceStatus;
   lastSeenAt: string | null;
   currentItemId: string | null;
+  orientation: Orientation;
   locationId: string | null;
   location: { id: string; name: string } | null;
   playlistId: string | null;
@@ -103,6 +105,7 @@ export function DevicesPage() {
   const [claimName, setClaimName]         = useState('');
   const [claimLocationId, setClaimLocationId] = useState('');
   const [claimPlaylistId, setClaimPlaylistId] = useState('');
+  const [claimOrientation, setClaimOrientation] = useState<Orientation>('LANDSCAPE');
   const [claimBusy, setClaimBusy]         = useState(false);
   const [claimError, setClaimError]       = useState('');
 
@@ -111,6 +114,7 @@ export function DevicesPage() {
   const [editName, setEditName]       = useState('');
   const [editLocationId, setEditLocationId] = useState('');
   const [editPlaylistId, setEditPlaylistId] = useState('');
+  const [editOrientation, setEditOrientation] = useState<Orientation>('LANDSCAPE');
   const [editBusy, setEditBusy]       = useState(false);
   const [editError, setEditError]     = useState('');
 
@@ -159,6 +163,7 @@ export function DevicesPage() {
 
   function openClaim() {
     setClaimCode(''); setClaimName(''); setClaimLocationId(''); setClaimPlaylistId('');
+    setClaimOrientation('LANDSCAPE');
     setClaimError(''); setClaimOpen(true);
   }
 
@@ -172,6 +177,7 @@ export function DevicesPage() {
         pairingCode: claimCode.trim().toUpperCase(),
         name: claimName.trim(),
         locationId: claimLocationId,
+        orientation: claimOrientation,
         ...(claimPlaylistId ? { playlistId: claimPlaylistId } : {}),
       });
       setDevices(prev => [claimed, ...prev]);
@@ -190,6 +196,7 @@ export function DevicesPage() {
     setEditName(d.name ?? '');
     setEditLocationId(d.locationId ?? '');
     setEditPlaylistId(d.playlistId ?? '');
+    setEditOrientation(d.orientation);
     setEditError('');
   }
 
@@ -204,6 +211,7 @@ export function DevicesPage() {
         name: editName.trim() || null,
         locationId: editLocationId || null,
         playlistId: editPlaylistId || null,
+        orientation: editOrientation,
       });
       setDevices(prev => prev.map(d => d.id === editId ? updated : d));
       closeEdit();
@@ -293,6 +301,17 @@ export function DevicesPage() {
                 {playlists.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Orientation</label>
+              <select
+                value={editOrientation}
+                onChange={e => setEditOrientation(e.target.value as Orientation)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white"
+              >
+                <option value="LANDSCAPE">↔ Landscape</option>
+                <option value="PORTRAIT">↕ Portrait</option>
+              </select>
+            </div>
             {editError && <ErrorBanner msg={editError} />}
             <div className="flex items-center gap-3 pt-1">
               <button
@@ -325,8 +344,8 @@ export function DevicesPage() {
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           {/* Column header */}
-          <div className="grid grid-cols-[2fr_1fr_1.5fr_1.5fr_1fr_auto] gap-4 px-5 py-2.5 border-b border-slate-100 bg-slate-50">
-            {['Name', 'Status', 'Location', 'Playlist', 'Activity', ''].map(h => (
+          <div className="grid grid-cols-[2fr_1fr_1.5fr_1.5fr_1fr_1fr_auto] gap-4 px-5 py-2.5 border-b border-slate-100 bg-slate-50">
+            {['Name', 'Status', 'Location', 'Playlist', 'Orientation', 'Activity', ''].map(h => (
               <span key={h} className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</span>
             ))}
           </div>
@@ -335,7 +354,7 @@ export function DevicesPage() {
             {devices.map(d => (
               <div
                 key={d.id}
-                className={`grid grid-cols-[2fr_1fr_1.5fr_1.5fr_1fr_auto] gap-4 items-center px-5 py-4 transition-colors ${
+                className={`grid grid-cols-[2fr_1fr_1.5fr_1.5fr_1fr_1fr_auto] gap-4 items-center px-5 py-4 transition-colors ${
                   editId === d.id ? 'bg-indigo-50' : 'hover:bg-slate-50'
                 }`}
               >
@@ -362,6 +381,13 @@ export function DevicesPage() {
                   {d.playlist
                     ? <span className="text-sm text-slate-600 truncate block">{d.playlist.name}</span>
                     : <span className="text-xs text-slate-400">location default</span>}
+                </div>
+
+                {/* Orientation */}
+                <div>
+                  <span className={`text-xs font-medium ${d.orientation === 'PORTRAIT' ? 'text-purple-600' : 'text-slate-500'}`}>
+                    {d.orientation === 'PORTRAIT' ? '↕ Portrait' : '↔ Landscape'}
+                  </span>
                 </div>
 
                 {/* Activity */}
@@ -495,6 +521,19 @@ export function DevicesPage() {
                 >
                   <option value="">— Use location default —</option>
                   {playlists.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+
+              {/* Orientation */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Orientation</label>
+                <select
+                  value={claimOrientation}
+                  onChange={e => setClaimOrientation(e.target.value as Orientation)}
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white"
+                >
+                  <option value="LANDSCAPE">↔ Landscape</option>
+                  <option value="PORTRAIT">↕ Portrait</option>
                 </select>
               </div>
 

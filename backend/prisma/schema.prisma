@@ -27,6 +27,7 @@ model Device {
   authToken          String?      @unique
   lastSeenAt         DateTime?
   currentItemId      String?
+  orientation        Orientation  @default(LANDSCAPE)
   locationId         String?
   location           Location?    @relation(fields: [locationId], references: [id])
   playlistId         String?
@@ -39,6 +40,11 @@ enum DeviceStatus {
   PENDING
   CLAIMED
   DISABLED
+}
+
+enum Orientation {
+  LANDSCAPE
+  PORTRAIT
 }
 
 model MediaAsset {

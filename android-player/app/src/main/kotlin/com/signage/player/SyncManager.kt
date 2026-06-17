@@ -23,6 +23,7 @@ data class SyncResult(
     val items: List<CachedItem>,   // sorted by order, only fully-cached items
     val downloaded: Int,
     val removed: Int,
+    val orientation: String,       // "LANDSCAPE" | "PORTRAIT"
 )
 
 object SyncManager {
@@ -134,7 +135,7 @@ object SyncManager {
             )
         }.sortedBy { it.order }
 
-        SyncResult(manifest.playlistId, items, downloaded, removed)
+        SyncResult(manifest.playlistId, items, downloaded, removed, manifest.orientation)
     }
 
     // ── Download helpers ──────────────────────────────────────────────────────

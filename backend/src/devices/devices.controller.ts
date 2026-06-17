@@ -16,12 +16,14 @@ class ClaimDto {
   name!: string;
   locationId!: string;
   playlistId?: string;
+  orientation?: 'LANDSCAPE' | 'PORTRAIT';
 }
 
 class UpdateDeviceDto {
   name?: string;
   locationId?: string | null;
   playlistId?: string | null;
+  orientation?: 'LANDSCAPE' | 'PORTRAIT';
 }
 
 // /api/devices/* — JWT guard applies (plural path does not match /api/device/ passthrough).

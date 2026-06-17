@@ -17,12 +17,14 @@ interface ClaimDto {
   name: string;
   locationId: string;
   playlistId?: string;
+  orientation?: 'LANDSCAPE' | 'PORTRAIT';
 }
 
 interface UpdateDeviceDto {
   name?: string;
   locationId?: string | null;
   playlistId?: string | null;
+  orientation?: 'LANDSCAPE' | 'PORTRAIT';
 }
 
 const DEVICE_SELECT = {
@@ -31,6 +33,7 @@ const DEVICE_SELECT = {
   status: true,
   lastSeenAt: true,
   currentItemId: true,
+  orientation: true,
   locationId: true,
   location: { select: { id: true, name: true } },
   playlistId: true,
@@ -118,6 +121,7 @@ export class DevicesService {
         name: dto.name,
         locationId: dto.locationId,
         playlistId: dto.playlistId ?? null,
+        orientation: dto.orientation ?? 'LANDSCAPE',
         status: 'CLAIMED',
         authToken,
         pairingCode: null,
@@ -160,7 +164,7 @@ export class DevicesService {
       device.playlistId ?? device.location?.playlistId ?? null;
 
     if (!playlistId) {
-      return { playlistId: null, updatedAt: null, items: [] };
+      return { playlistId: null, updatedAt: null, orientation: device.orientation, items: [] };
     }
 
     const playlist = await this.prisma.playlist.findUnique({
@@ -174,7 +178,7 @@ export class DevicesService {
     });
 
     if (!playlist) {
-      return { playlistId: null, updatedAt: null, items: [] };
+      return { playlistId: null, updatedAt: null, orientation: device.orientation, items: [] };
     }
 
     const items = await Promise.all(
@@ -189,7 +193,7 @@ export class DevicesService {
       })),
     );
 
-    return { playlistId: playlist.id, updatedAt: playlist.updatedAt, items };
+    return { playlistId: playlist.id, updatedAt: playlist.updatedAt, orientation: device.orientation, items };
   }
 
   // ── Heartbeat ──────────────────────────────────────────────────────────────

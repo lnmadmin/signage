@@ -36,6 +36,7 @@ object DeviceApi {
     data class ManifestResponse(
         val playlistId: String?,
         val updatedAt: String?,
+        val orientation: String,   // "LANDSCAPE" | "PORTRAIT"
         val items: List<ManifestItem>,
     )
 
@@ -113,8 +114,9 @@ object DeviceApi {
         val j = JSONObject(body)
         val arr: JSONArray = j.getJSONArray("items")
         ManifestResponse(
-            playlistId = j.optString("playlistId").takeIf { it.isNotEmpty() && it != "null" },
-            updatedAt  = j.optString("updatedAt").takeIf  { it.isNotEmpty() && it != "null" },
+            playlistId  = j.optString("playlistId").takeIf { it.isNotEmpty() && it != "null" },
+            updatedAt   = j.optString("updatedAt").takeIf  { it.isNotEmpty() && it != "null" },
+            orientation = j.optString("orientation", "LANDSCAPE").let { if (it == "PORTRAIT") "PORTRAIT" else "LANDSCAPE" },
             items = (0 until arr.length()).map { i ->
                 val item = arr.getJSONObject(i)
                 ManifestItem(
