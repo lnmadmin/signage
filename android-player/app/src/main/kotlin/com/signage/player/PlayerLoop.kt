@@ -91,6 +91,10 @@ class PlayerLoop(
         player.release()
     }
 
+    fun resume() {
+        if (videoActive && !player.isPlaying) player.play()
+    }
+
     // ── Playback logic ────────────────────────────────────────────────────────
 
     private fun playCurrentItem() {

@@ -1,6 +1,7 @@
 package com.signage.player
 
 import android.app.admin.DevicePolicyManager
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -24,6 +25,13 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var playerLoop: PlayerLoop
+
+    private val screenOnReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            hideSystemBars()
+            playerLoop.resume()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +64,17 @@ class MainActivity : AppCompatActivity() {
         playerLoop.release()
     }
 
-    override fun onResume() { super.onResume(); hideSystemBars() }
+    override fun onResume() {
+        super.onResume()
+        hideSystemBars()
+        registerReceiver(screenOnReceiver, IntentFilter(Intent.ACTION_SCREEN_ON))
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unregisterReceiver(screenOnReceiver)
+    }
+
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) hideSystemBars()

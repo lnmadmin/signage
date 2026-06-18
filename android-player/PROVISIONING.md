@@ -68,6 +68,25 @@ If `remove-active-admin` is blocked, factory-reset is the only option.
 
 ---
 
+## Always-on power settings
+
+After provisioning, configure the stick so it resumes playback automatically after a power cut and never sleeps.
+
+**Amazon Fire TV Stick:**
+1. `Settings → My Fire TV → Power → Resume playback on auto power on` → **On**
+2. `Settings → My Fire TV → Power → Automatic standby` → **Never** (or the longest available interval)
+3. `Settings → Display & Sounds → Display sleep` → **Never**
+
+**General Android TV / stick:**
+1. Look for `Settings → Device Preferences → Power → Auto power on` → enable if present.
+2. `Settings → Device Preferences → Screen saver` → **Off** (or set to **Never** start).
+3. `Settings → Device Preferences → Sleep` / `Display sleep` → **Never**.
+4. Disable Daydream if listed: `Settings → Display → Daydream` → **Off**.
+
+These settings, combined with the wake lock held by the foreground HeartbeatService and `FLAG_KEEP_SCREEN_ON` in MainActivity, ensure the screen stays on and playback resumes automatically after any power interruption.
+
+---
+
 ## Emulator testing note
 
 The emulator does not enforce the "no accounts" restriction as strictly as a real device. You can usually set Device Owner directly on a fresh emulator AVD without a factory reset. Lock-task mode functions correctly on API 29+ emulators — the navigation bar buttons become unresponsive as expected.

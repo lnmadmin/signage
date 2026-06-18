@@ -1,10 +1,12 @@
 package com.signage.player
 
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CoroutineScope
@@ -18,10 +20,14 @@ class HeartbeatService : Service() {
 
     private val scope = CoroutineScope(Dispatchers.IO + Job())
     private var heartbeatJob: Job? = null
+    private lateinit var wakeLock: PowerManager.WakeLock
 
     override fun onCreate() {
         super.onCreate()
         SecurePrefs.init(this)
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "signage:heartbeat")
+        wakeLock.acquire()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -52,6 +58,7 @@ class HeartbeatService : Service() {
 
     override fun onDestroy() {
         scope.cancel()
+        if (wakeLock.isHeld) wakeLock.release()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
