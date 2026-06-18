@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Signage Player</string>
+    <string name="app_name">L&amp;M Signage</string>
     <string name="starting">Starting…</string>
     <string name="pair_label">Pair this display</string>
     <string name="pair_hint">Enter this code in the CMS to start playing</string>
