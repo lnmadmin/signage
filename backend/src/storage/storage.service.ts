@@ -18,6 +18,7 @@ export class StorageService implements OnModuleInit {
     this.client = new Client({
       endPoint: process.env.MINIO_ENDPOINT!,
       port,
+      region: process.env.MINIO_REGION || 'us-east-1',
       useSSL,
       accessKey,
       secretKey,
@@ -34,11 +35,12 @@ export class StorageService implements OnModuleInit {
     if (pub) {
       const colonIdx = pub.lastIndexOf(':');
       const pubHost = colonIdx > 0 ? pub.slice(0, colonIdx) : pub;
-      const pubPort = colonIdx > 0 ? Number(pub.slice(colonIdx + 1)) : port;
+      const pubPort = colonIdx > 0 ? Number(pub.slice(colonIdx + 1)) : (process.env.MINIO_PUBLIC_USE_SSL === "true" ? 443 : port);
       // Specifying region avoids a network roundtrip that discovers it;
       // without it the client tries (and fails) to connect to the public host from the server.
       const region = process.env.MINIO_REGION || 'us-east-1';
-      this.presignClient = new Client({ endPoint: pubHost, port: pubPort, useSSL, accessKey, secretKey, region });
+      const pubUseSSL = process.env.MINIO_PUBLIC_USE_SSL === "true" || useSSL;
+      this.presignClient = new Client({ endPoint: pubHost, port: pubPort, useSSL: pubUseSSL, accessKey, secretKey, region });
       this.logger.log(`Presigned URLs will use public endpoint: ${pubHost}:${pubPort} (region=${region})`);
     } else {
       this.presignClient = this.client;

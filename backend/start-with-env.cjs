@@ -8,4 +8,4 @@ for (const line of envFile.split('\n')) {
   if (m) process.env[m[1]] = m[2].trim();
 }
 
-require('./dist/src/main');
+require(path.join(__dirname, 'dist/src/main'));
