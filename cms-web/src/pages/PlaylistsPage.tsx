@@ -114,6 +114,7 @@ export function PlaylistsPage() {
 
   // Library multi-select
   const [pickerSelected, setPickerSelected] = useState<Set<string>>(new Set());
+  const [pickerSearch, setPickerSearch]     = useState('');
 
   const newNameRef = useRef<HTMLInputElement>(null);
   const renameRef  = useRef<HTMLInputElement>(null);
@@ -135,6 +136,7 @@ export function PlaylistsPage() {
 
   useEffect(() => {
     setPickerSelected(new Set());
+    setPickerSearch('');
     if (!selectedId) {
       setDetail(null);
       setRows([]);
@@ -251,6 +253,13 @@ export function PlaylistsPage() {
     setIsDirty(true);
   }
 
+  const filteredMedia = pickerSearch
+    ? mediaAll.filter(a => a.filename.toLowerCase().includes(pickerSearch.toLowerCase()))
+    : mediaAll;
+
+  const allFilteredSelected = filteredMedia.length > 0 && filteredMedia.every(a => pickerSelected.has(a.id));
+  const someFilteredSelected = filteredMedia.some(a => pickerSelected.has(a.id));
+
   function toggleAssetSelection(id: string) {
     setPickerSelected(prev => {
       const next = new Set(prev);
@@ -260,9 +269,19 @@ export function PlaylistsPage() {
   }
 
   function toggleAllAssets() {
-    setPickerSelected(
-      pickerSelected.size === mediaAll.length ? new Set() : new Set(mediaAll.map(a => a.id))
-    );
+    if (allFilteredSelected) {
+      setPickerSelected(prev => {
+        const next = new Set(prev);
+        filteredMedia.forEach(a => next.delete(a.id));
+        return next;
+      });
+    } else {
+      setPickerSelected(prev => {
+        const next = new Set(prev);
+        filteredMedia.forEach(a => next.add(a.id));
+        return next;
+      });
+    }
   }
 
   function addSelected() {
@@ -578,8 +597,8 @@ export function PlaylistsPage() {
               {mediaAll.length > 0 && (
                 <input
                   type="checkbox"
-                  checked={pickerSelected.size === mediaAll.length}
-                  ref={el => { if (el) el.indeterminate = pickerSelected.size > 0 && pickerSelected.size < mediaAll.length; }}
+                  checked={allFilteredSelected}
+                  ref={el => { if (el) el.indeterminate = someFilteredSelected && !allFilteredSelected; }}
                   onChange={toggleAllAssets}
                   className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 flex-shrink-0 cursor-pointer"
                 />
@@ -597,13 +616,50 @@ export function PlaylistsPage() {
                 </button>
               )}
             </div>
+            {mediaAll.length > 0 && (
+              <div className="px-4 py-2.5 border-b border-slate-100">
+                <div className="relative">
+                  <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 15.803a7.5 7.5 0 0 0 10.607 0Z" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={pickerSearch}
+                    onChange={e => setPickerSearch(e.target.value)}
+                    placeholder="Search by filename…"
+                    className="w-full pl-8 pr-8 py-1.5 text-sm text-slate-700 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent"
+                  />
+                  {pickerSearch && (
+                    <button
+                      onClick={() => setPickerSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                      title="Clear search"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
             {mediaAll.length === 0 ? (
               <div className="px-4 py-10 text-center text-sm text-slate-400">
                 No media in library yet. Upload some on the Media page.
               </div>
+            ) : filteredMedia.length === 0 ? (
+              <div className="px-4 py-8 text-center">
+                <p className="text-sm text-slate-500">No results for "{pickerSearch}"</p>
+                <button
+                  onClick={() => setPickerSearch('')}
+                  className="mt-1.5 text-xs text-indigo-600 hover:text-indigo-700 hover:underline"
+                >
+                  Clear search
+                </button>
+              </div>
             ) : (
               <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
-                {mediaAll.map(asset => (
+                {filteredMedia.map(asset => (
                   <div
                     key={asset.id}
                     onClick={() => toggleAssetSelection(asset.id)}

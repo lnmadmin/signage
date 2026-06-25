@@ -207,6 +207,36 @@ function QueuePanel({
   );
 }
 
+// ── Search input ───────────────────────────────────────────────────────────────
+
+function SearchInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="relative">
+      <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 15.803a7.5 7.5 0 0 0 10.607 0Z" />
+      </svg>
+      <input
+        type="text"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder="Search by filename…"
+        className="w-full pl-8 pr-8 py-2 text-sm text-slate-700 border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent"
+      />
+      {value && (
+        <button
+          onClick={() => onChange('')}
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+          title="Clear search"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 const CONCURRENCY = 3;
@@ -218,10 +248,14 @@ export function MediaPage() {
   const [queue, setQueue]         = useState<QueueItem[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [dragCount, setDragCount] = useState(0);
+  const [search, setSearch]       = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isDragging = dragCount > 0;
   const isUploading = queue.some(q => q.status === 'pending' || q.status === 'uploading');
+  const filteredAssets = search
+    ? assets.filter(a => a.filename.toLowerCase().includes(search.toLowerCase()))
+    : assets;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -350,6 +384,11 @@ export function MediaPage() {
         </div>
       </div>
 
+      {/* Search */}
+      <div className="mb-5">
+        <SearchInput value={search} onChange={setSearch} />
+      </div>
+
       {/* Upload queue */}
       {queue.length > 0 && (
         <QueuePanel queue={queue} onDismiss={() => setQueue([])} />
@@ -376,9 +415,19 @@ export function MediaPage() {
           <p className="text-sm font-medium text-slate-500">No media yet</p>
           <p className="text-xs text-slate-400 mt-1">Click Upload or drop files here to get started.</p>
         </div>
+      ) : filteredAssets.length === 0 ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
+          <p className="text-sm font-medium text-slate-500">No results for "{search}"</p>
+          <button
+            onClick={() => setSearch('')}
+            className="mt-2 text-xs text-indigo-600 hover:text-indigo-700 hover:underline"
+          >
+            Clear search
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {assets.map((asset) => (
+          {filteredAssets.map((asset) => (
             <div
               key={asset.id}
               className="group relative bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-slate-300 hover:shadow-sm transition-all"
